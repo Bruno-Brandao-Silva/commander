@@ -1,4 +1,4 @@
-import { Client as DiscordClient, ClientOptions, TextChannel, EmbedBuilder, Embed } from 'discord.js';
+import { Client as DiscordClient, ClientOptions, TextChannel, EmbedBuilder, Embed, AttachmentBuilder } from 'discord.js';
 
 class Client extends DiscordClient {
 	private guildChannelMap: Map<string, string>;
@@ -17,7 +17,7 @@ class Client extends DiscordClient {
 		return channel;
 	}
 
-	private async log(guildId: string, level: 'info' | 'error', message: string, files?: EmbedFiles) {
+	private async log(guildId: string, level: 'info' | 'error', message: string, attachments?: AttachmentBuilder[]) {
 		const logChannel = await this.getLogChannel(guildId);
 		if (!logChannel) return;
 
@@ -29,16 +29,21 @@ class Client extends DiscordClient {
 
 		logChannel.send({
 			embeds: [embed],
-			files
+		}).then(() => {
+			attachments && attachments.forEach((attachment) => {
+				logChannel.send({
+					files: [attachment],
+				});
+			});
 		});
 	}
 
-	public info(guildId: string, message: string, files?: EmbedFiles) {
-		this.log(guildId, 'info', message, files);
+	public info(guildId: string, message: string, attachments?: AttachmentBuilder[]) {
+		this.log(guildId, 'info', message, attachments);
 	}
 
-	public error(guildId: string, message: string, files?: EmbedFiles) {
-		this.log(guildId, 'error', message, files);
+	public error(guildId: string, message: string, attachments?: AttachmentBuilder[]) {
+		this.log(guildId, 'error', message, attachments);
 	}
 	public setLogChannel(guildId: string, channelId: string) {
 		this.guildChannelMap.set(guildId, channelId);

@@ -1,4 +1,4 @@
-import { ChannelType, ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import { AttachmentBuilder, ChannelType, ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import Client from "../models/Client";
 import { Readable } from "stream";
 
@@ -33,9 +33,8 @@ export const ClearCommand = async (interaction: ChatInputCommandInteraction, cli
                     msg.delete();
                 }, 5000);
             });
-        const files: [{ name: string, attachment: Readable }] = [{
-            name: 'deletedMessages.txt',
-            attachment: new Readable({
+        const attachment = new AttachmentBuilder(
+            new Readable({
                 read() {
                     this.push(`Deleted by: ${member.toString()} [${member.user.username}] at ${new Date().formatDate()}\n\n`);
                     this.push('Deleted Messages:\n\n');
@@ -43,9 +42,10 @@ export const ClearCommand = async (interaction: ChatInputCommandInteraction, cli
                     this.push(deletedMessages.reverse().map(msg => msg && `${msg.author!.toString()} [${msg.author!.username}] [${msg.author!.displayName}] at [${new Date(msg.createdTimestamp).formatDate()}][${msg.editedTimestamp ? `${new Date(msg.editedTimestamp).formatDate()}` : ''}]: ${msg.content}`).join('\n'));
                     this.push(null);
                 }
-            })
-        }];
-        client.info(guildId, `${member.toString()} cleared ${deletedMessages.size} messages in ${channel.toString()}`, files);
+            }),
+            { name: 'deletedMessages.txt' }
+        );
+        client.info(guildId, `${member.toString()} cleared ${deletedMessages.size} messages in ${channel.toString()}`, [attachment]);
     } catch (error) {
         console.error(error);
         interaction.reply('There was an error while trying to clear messages.');
