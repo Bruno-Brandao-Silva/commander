@@ -1,0 +1,28 @@
+{
+  "name": "commander",
+  "version": "0.1.0",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "nodemon --exec ts-node ./index.ts",
+    "start": "node ./dist/index.js",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "Bruno Brandão Silva",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@cityssm/unleet": "^2.4.0",
+    "@types/dotenv": "^8.2.0",
+    "discord.js": "^14.15.2",
+    "dotenv": "^16.4.5",
+    "mongoose": "^8.3.4",
+    "natural": "^7.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.11",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
