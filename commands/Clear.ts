@@ -28,11 +28,7 @@ export const ClearCommand = async (interaction: ChatInputCommandInteraction, cli
 
         const deletedMessages = await channel.bulkDelete(amount + 1, true);
         await interaction.reply(`Hey ${member.toString()}, I have cleared ${deletedMessages.size} messages for you!`)
-            .then((msg) => {
-                setTimeout(() => {
-                    msg.delete();
-                }, 5000);
-            });
+            
         const attachment = new AttachmentBuilder(
             new Readable({
                 read() {
@@ -49,5 +45,7 @@ export const ClearCommand = async (interaction: ChatInputCommandInteraction, cli
     } catch (error) {
         console.error(error);
         interaction.reply('There was an error while trying to clear messages.');
+    } finally {
+        setTimeout(() => interaction.deleteReply(), 5000)
     }
 };
