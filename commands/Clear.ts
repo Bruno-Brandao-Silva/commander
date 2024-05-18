@@ -1,4 +1,4 @@
-import { AttachmentBuilder, ChannelType, ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import { AttachmentBuilder, ChannelType, ChatInputCommandInteraction, Collection, Message, PartialMessage, SlashCommandBuilder } from "discord.js";
 import Client from "../models/Client";
 import { Readable } from "stream";
 
@@ -22,26 +22,56 @@ export const ClearCommand = async (interaction: ChatInputCommandInteraction, cli
 
         const amount = interaction.options.getInteger('amount')!;
 
-        if (isNaN(amount) || amount <= 0 || amount > 99) {
-            return interaction.reply('Please provide a number between 1 and 99 to clear messages.');
+        if (isNaN(amount) || amount <= 0) {
+            return interaction.reply('Please provide a valid amount of messages to clear.');
         }
 
-        const deletedMessages = await channel.bulkDelete(amount + 1, true);
-        await interaction.reply(`Hey ${member.toString()}, I have cleared ${deletedMessages.size} messages for you!`)
-            
+        const forLimiter = amount % 100;
+        const rest = amount - forLimiter * 100;
+
+        const deletedMessages: Collection<string, PartialMessage | Message<boolean> | undefined>[] = [];
+        
+        let overloadPrevent: boolean = false;
+        let size = 0;
+
+        for (let i = 0; i < forLimiter; i++) {
+            const _deletedMessages = await channel.bulkDelete(100, true);
+            deletedMessages.push(_deletedMessages);
+            size += _deletedMessages.size;
+            if (_deletedMessages.size != 100) {
+                overloadPrevent = true;
+                break;
+            }
+        }
+
+        if (!overloadPrevent) {
+            const _deletedMessages = await channel.bulkDelete(rest, true);
+            deletedMessages.push(_deletedMessages);
+            size += _deletedMessages.size;
+        }
+
         const attachment = new AttachmentBuilder(
             new Readable({
                 read() {
                     this.push(`Deleted by: ${member.toString()} [${member.user.username}] at ${new Date().formatDate()}\n\n`);
                     this.push('Deleted Messages:\n\n');
                     this.push(`<UserId> [Username] [DisplayName] at [CreateDate][EditedDate]: Content\n\n`);
-                    this.push(deletedMessages.reverse().map(msg => msg && `${msg.author!.toString()} [${msg.author!.username}] [${msg.author!.displayName}] at [${new Date(msg.createdTimestamp).formatDate()}][${msg.editedTimestamp ? `${new Date(msg.editedTimestamp).formatDate()}` : ''}]: ${msg.content}`).join('\n'));
+                    this.push(deletedMessages
+                        .reverse()
+                        .map(_deletedMessages => _deletedMessages
+                            .reverse()
+                            .map(msg => msg && `${msg.author!.toString()} [${msg.author!.username}] [${msg.author!.displayName}] at [${new Date(msg.createdTimestamp).formatDate()}][${msg.editedTimestamp ? `${new Date(msg.editedTimestamp).formatDate()}` : ''}]: ${msg.content}`)
+                            .join('\n')
+                        ).join('\n'));
                     this.push(null);
                 }
             }),
             { name: 'deletedMessages.txt' }
         );
-        client.info(guildId, `${member.toString()} cleared ${deletedMessages.size} messages in ${channel.toString()}`, [attachment]);
+
+        await interaction.reply(`Hey ${member.toString()}, I have cleared ${size} messages for you!`)
+
+        client.info(guildId, `${member.toString()} cleared ${size} messages in ${channel.toString()}`, [attachment]);
     } catch (error) {
         console.error(error);
         interaction.reply('There was an error while trying to clear messages.');
