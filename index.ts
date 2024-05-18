@@ -8,6 +8,8 @@ import Classifier from './controllers/Classifier';
 import Client from './models/Client';
 import { ClearCommand, ClearCommandJSON } from './commands/Clear';
 import './lib/utils';
+import { BanCommand, BanCommandJSON } from './commands/Ban';
+import { KickCommand, KickCommandJSON } from './commands/Kick';
 
 const { TOKEN, CLIENT_ID, MONGODB_URI, LOG_CHANNEL } = process.env;
 
@@ -129,14 +131,24 @@ client.on(Events.GuildMemberRemove, (member) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isCommand()) return;
-    const { commandName } = interaction;
-    if (commandName === 'ping') {
-        await interaction.reply('Pong!');
-    } else if (commandName === 'clear' && interaction.isChatInputCommand()) {
-        await ClearCommand(interaction, client);
-    }
 
+    if (!interaction.isCommand()) return;
+
+    const { commandName } = interaction;
+
+    if (interaction.isChatInputCommand()) {
+        if (commandName === 'clear') {
+            await ClearCommand(interaction, client);
+        } else if (commandName === 'kick') {
+            await KickCommand(interaction, client);
+        } else if (commandName === 'ban') {
+            await BanCommand(interaction, client);
+        }
+    } else {
+        if (commandName === 'ping') {
+            await interaction.reply('Pong!');
+        }
+    }
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -256,18 +268,22 @@ const pointsCommand = new SlashCommandBuilder()
     );
 
 
+const setCommands = () => {
+    const commands = [
+        pingCommand.toJSON(),
+        pointsCommand.toJSON(),
+        boopCommand.toJSON(),
+        ClearCommandJSON,
+        BanCommandJSON,
+        KickCommandJSON
+    ];
 
-// const commands = [
-//     pingCommand.toJSON(),
-//     pointsCommand.toJSON(),
-//     boopCommand.toJSON(),
-//     ClearCommandJSON
-// ];
+    const rest = new REST({ version: '10' }).setToken(TOKEN);
 
-// const rest = new REST({ version: '10' }).setToken(TOKEN);
-
-// console.log('Started refreshing application (/) commands.');
+    console.log('Started refreshing application (/) commands.');
 
 
-// rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands }).then(() =>
-//     console.log('Successfully reloaded application (/) commands.')).catch(console.error);
+    rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands }).then(() =>
+        console.log('Successfully reloaded application (/) commands.')).catch(console.error);
+
+}
