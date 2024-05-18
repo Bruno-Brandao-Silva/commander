@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, GuildMemberRoleManager, SlashCommandBuilder } from "discord.js";
+import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from "discord.js";
 import Client from "../models/Client";
 
 export const BanCommandJSON = new SlashCommandBuilder().
@@ -16,10 +16,11 @@ export const BanCommandJSON = new SlashCommandBuilder().
 
 export const BanCommand = async (interaction: ChatInputCommandInteraction, client: Client) => {
     try {
-
         const { guild, member } = interaction;
 
         if (!guild || !member) return interaction.reply('This command can only be used in server channels.');
+
+        if (!(member instanceof GuildMember)) return interaction.reply('API Integration not implemented for this command.');
 
         if (!interaction.memberPermissions?.has('BanMembers')) return interaction.reply('You do not have permission to ban members.');
 
@@ -28,23 +29,24 @@ export const BanCommand = async (interaction: ChatInputCommandInteraction, clien
 
         if (user.id == member.user.id) return interaction.reply('You cannot ban yourself.');
 
+        if (user.id == guild.ownerId) return interaction.reply('You cannot ban the server owner.');
+
         const memberToBan = await guild.members.fetch(user.id);
 
         if (!memberToBan) return interaction.reply('User not found.');
 
-        if (member.roles instanceof GuildMemberRoleManager && member.roles.highest.comparePositionTo(memberToBan.roles.highest) <= 0) return interaction.reply('You cannot ban this user.');
+        if (member.roles.highest.comparePositionTo(memberToBan.roles.highest) <= 0 && guild.ownerId !== member.user.id) return interaction.reply('You cannot ban this user.');
 
         memberToBan.ban({ reason }).then(() => {
-
             interaction.reply(`User ${user.toString()} has been banned from the server.`)
-                .then(msg => setTimeout(() => msg.delete(), 5000));
 
-            client.info(guild.id, `${member.toString()} banned ${user.toString()} from the server. Reason: ${reason}`);
-
+            client.info(guild.id, `${member.toString()} banned ${user.toString()} from the server.\nReason: ${reason}`);
         });
 
     } catch (error) {
         console.error(error);
         interaction.reply('There was an error while trying to ban the user.');
+    } finally {
+        setTimeout(() => interaction.deleteReply(), 5000)
     }
 }
