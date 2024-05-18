@@ -25,8 +25,8 @@ export const KickCommand = async (interaction: ChatInputCommandInteraction, clie
 
         if (!interaction.memberPermissions?.has('KickMembers')) return interaction.reply('You do not have permission to kick members.');
 
-        const user = interaction.options.getUser('user')!;
-        const reason = interaction.options.getString('reason') || 'No reason provided';
+        const user = interaction.options.getUser('user', true);
+        const reason = interaction.options.getString('reason', false) || 'No reason provided';
 
         if (user.id == member.user.id) return interaction.reply('You cannot kick yourself.');
 
@@ -37,6 +37,8 @@ export const KickCommand = async (interaction: ChatInputCommandInteraction, clie
         if (!memberToKick) return interaction.reply('User not found.');
 
         if (member.roles.highest.comparePositionTo(memberToKick.roles.highest) <= 0 && guild.ownerId !== member.user.id) return interaction.reply('You cannot kick this user.');
+
+        await memberToKick.send(`You have been kicked from the server ${guild.name}. Reason: ${reason}`).catch(() => console.error);
 
         memberToKick.kick(reason).then(() => {
             interaction.reply(`User ${user.toString()} has been kicked from the server.`)
