@@ -24,8 +24,8 @@ export const BanCommand = async (interaction: ChatInputCommandInteraction, clien
 
         if (!interaction.memberPermissions?.has('BanMembers')) return interaction.reply('You do not have permission to ban members.');
 
-        const user = interaction.options.getUser('user')!;
-        const reason = interaction.options.getString('reason') || 'No reason provided';
+        const user = interaction.options.getUser('user', true);
+        const reason = interaction.options.getString('reason', false) || 'No reason provided';
 
         if (user.id == member.user.id) return interaction.reply('You cannot ban yourself.');
 
@@ -36,6 +36,8 @@ export const BanCommand = async (interaction: ChatInputCommandInteraction, clien
         if (!memberToBan) return interaction.reply('User not found.');
 
         if (member.roles.highest.comparePositionTo(memberToBan.roles.highest) <= 0 && guild.ownerId !== member.user.id) return interaction.reply('You cannot ban this user.');
+
+        await memberToBan.send(`You have been banned from the server ${guild.name}. Reason: ${reason}`).catch(() => console.error);
 
         memberToBan.ban({ reason }).then(() => {
             interaction.reply(`User ${user.toString()} has been banned from the server.`)
