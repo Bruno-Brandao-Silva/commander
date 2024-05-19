@@ -1,12 +1,15 @@
-import { Client as DiscordClient, ClientOptions, TextChannel, EmbedBuilder, Embed, AttachmentBuilder } from 'discord.js';
+import { Client as DiscordClient, ClientOptions, TextChannel, EmbedBuilder, Embed, AttachmentBuilder, Message } from 'discord.js';
+import SpanControl from './SpanControl';
 
 class Client extends DiscordClient {
-	private guildChannelMap: Map<string, string>;
+	private guildChannelMap: Map<string, string> = new Map();
+	private spanControl: SpanControl = new SpanControl(this);
 
 	constructor(options: ClientOptions) {
 		super(options);
-		this.guildChannelMap = new Map();
 	}
+
+	public SpanDetector = (message: Message) => this.spanControl.SpanDetector(message);
 
 	private async getLogChannel(guildId: string): Promise<TextChannel | null> {
 		const guild = this.guilds.cache.get(guildId);
@@ -45,6 +48,7 @@ class Client extends DiscordClient {
 	public error(guildId: string, message: string, attachments?: AttachmentBuilder[]) {
 		this.log(guildId, 'error', message, attachments);
 	}
+	
 	public setLogChannel(guildId: string, channelId: string) {
 		this.guildChannelMap.set(guildId, channelId);
 	}
